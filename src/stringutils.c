@@ -6,7 +6,7 @@
 #include "macros.h"
 #include "stringutils.h"
 
-#include <stdio.h>
+
 char* prune(char* str)
 {
     size_t length = strnlen(str, MAX_STRING_LENGTH);
