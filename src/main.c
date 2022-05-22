@@ -24,7 +24,20 @@ void execute(FILE* input)
     getline(&buf, &n, input);
     pruned_input = prune(buf);
     free(buf);
-    if (pruned_input != NULL)
+    bool valid_redirect = true;
+    char* redirect = index(pruned_input, '>');
+    if (redirect != NULL)
+    {
+        *redirect = '\0';
+        redirect++;
+        redirect = prune(redirect);
+        char* tmp = pruned_input;
+        pruned_input = prune(tmp);
+        free(tmp);
+
+        valid_redirect = redirect != NULL && index(redirect, '>') == NULL && count_words(redirect) == 1;
+    }
+    if (pruned_input != NULL && valid_redirect)
     {
         size_t num_args = count_words(pruned_input);
         char* args[num_args + 1];
@@ -80,6 +93,16 @@ void execute(FILE* input)
 
             if (authorized)
             {
+                int stderr_backup;
+                int stdout_backup;
+                if (redirect != NULL)
+                {
+                    stderr_backup = dup(STDERR_FILENO);
+                    stdout_backup = dup(STDOUT_FILENO);
+                    freopen(redirect, "w+", stdout);
+                    freopen(redirect, "w+", stderr);
+                }
+
                 int wstatus;
                 pid_t cpid = fork();
                 if (cpid == 0)
@@ -100,6 +123,16 @@ void execute(FILE* input)
                     {
                         print_error_message();
                     }
+
+                    if (redirect != NULL)
+                    {
+                        fflush(stderr);
+                        fflush(stdout);
+                        dup2(stderr_backup, STDERR_FILENO);
+                        dup2(stdout_backup, STDOUT_FILENO);
+                        close(stderr_backup);
+                        close(stdout_backup);
+                    }
                 }
             }
             else
@@ -107,16 +140,13 @@ void execute(FILE* input)
                 print_error_message();
             }
         }
-        
-        // Reset for the next loop
+
         /*
         The pruned_input variable is managed; however, we call strsep on it until it is reduced to a NULL pointer. Thus, it no longer needs
         to be freed. We haven't cleaned up our managed resource though - that pointer now resides at the first position of our args[] array.
         So we have to release that instead.
         */
         free(args[0]);
-        buf = NULL;
-        n = 0;
     }
     else
     {
