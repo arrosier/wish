@@ -4,7 +4,7 @@
 
 #include "common.h"
 #include "macros.h"
-#include "typedefs.h"
+#include "typedefs.h"   // Included just to be explicit
 
 
 void print_error_message()
