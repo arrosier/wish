@@ -24,8 +24,13 @@ void execute(FILE* input)
     getline(&buf, &n, input);
     pruned_input = prune(buf);
     free(buf);
-    bool valid_redirect = true;
-    char* redirect = index(pruned_input, '>');
+    bool valid_input = pruned_input != NULL;
+    char* redirect = NULL;
+    if (valid_input)
+    {
+        redirect = index(pruned_input, '>');
+    }
+
     if (redirect != NULL)
     {
         *redirect = '\0';
@@ -35,9 +40,10 @@ void execute(FILE* input)
         pruned_input = prune(tmp);
         free(tmp);
 
-        valid_redirect = redirect != NULL && index(redirect, '>') == NULL && count_words(redirect) == 1;
+        valid_input = redirect != NULL && index(redirect, '>') == NULL && count_words(redirect) == 1;
     }
-    if (pruned_input != NULL && valid_redirect)
+
+    if (valid_input)
     {
         size_t num_args = count_words(pruned_input);
         char* args[num_args + 1];
@@ -132,6 +138,7 @@ void execute(FILE* input)
                         dup2(stdout_backup, STDOUT_FILENO);
                         close(stderr_backup);
                         close(stdout_backup);
+                        free(redirect);
                     }
                 }
             }
