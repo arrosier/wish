@@ -2,8 +2,6 @@
 #define STRINGUTILS_H
 
 
-bool chomp(char* str);
-
 char* prune(char* str);
 
 char* get_new_string(const char* s1, const char* s2);
