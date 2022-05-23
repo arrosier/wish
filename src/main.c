@@ -147,6 +147,7 @@ void execute(FILE* input)
                         else
                         {
                             print_error_message();
+                            exit(1);
                         }
                     }
                     else
