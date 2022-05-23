@@ -61,12 +61,12 @@ char* get_new_string(const char* s1, const char* s2)
     return result;
 }
 
-size_t count_words(char* str)
+size_t count_char(char* str, char token)
 {
-    size_t count = 1;
+    size_t count = 0;
     for (size_t i = 0; i < strnlen(str, MAX_STRING_LENGTH); i++)
     {
-        if (str[i] == ' ')
+        if (str[i] == token)
         {
             count++;
         }

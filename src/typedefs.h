@@ -4,7 +4,7 @@
 
 typedef struct node
 {
-    char* path_str;
+    char* str;
     struct node* next;
 } node_t;
 

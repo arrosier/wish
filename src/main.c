@@ -1,7 +1,9 @@
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -9,7 +11,7 @@
 #include "common.h"
 #include "macros.h"
 #include "stringutils.h"
-#include "typedefs.h"       // Included just to be explicit
+#include "typedefs.h"
 
 
 node_t* path_list;
@@ -18,38 +20,58 @@ void execute(FILE* input)
 {
     char* buf = NULL;
     size_t n = 0;
-    char* pruned_input;
-    char* cmd;
-
+    node_t* cmd_list = NULL;
     getline(&buf, &n, input);
-    pruned_input = prune(buf);
+    char* pruned_input = prune(buf);
     free(buf);
-    bool valid_input = pruned_input != NULL;
-    char* redirect = NULL;
-    if (valid_input)
+    /*
+    The result of the prune function call is a managed resource. By using strsep on pruned_input below we'll be changing
+    where our variable points so we need to remember the original address to free it later. The cmd variable won't always
+    point to the address returned by prune either, so we'll reuse buf to accomplish it.
+    */
+    buf = pruned_input;
+    char* ptr;
+    while((ptr = strsep(&pruned_input, "&")) != NULL)
     {
-        redirect = index(pruned_input, '>');
+        char* tmp_str = prune(ptr);
+        if (tmp_str == NULL)
+        {
+            free(tmp_str);
+            continue;
+        }
+        node_t* tmp = create_node(tmp_str);
+        tmp->next = cmd_list;
+        cmd_list = tmp;
+        free(tmp_str);
     }
 
-    if (redirect != NULL)
+    while (cmd_list != NULL)
     {
-        *redirect = '\0';
-        redirect++;
-        redirect = prune(redirect);
-        char* tmp = pruned_input;
-        pruned_input = prune(tmp);
-        free(tmp);
+        char* input = cmd_list->str;
+        char* redirect = index(input, '>');
+        bool redirect_found = redirect != NULL;
+        if (redirect_found)
+        {
+            *redirect = '\0';
+            redirect++;
+            redirect = prune(redirect);
+            char* tmp = input;
+            input = prune(tmp);
+            free(tmp);
+            if (input == NULL)
+            {
+                print_error_message();
+                cmd_list = cmd_list->next;
+                continue;
+            }
+        }
 
-        valid_input = redirect != NULL && index(redirect, '>') == NULL && count_words(redirect) == 1;
-    }
-
-    if (valid_input)
-    {
-        size_t num_args = count_words(pruned_input);
+        size_t num_args = count_char(input, ' ') + 1;
         char* args[num_args + 1];
-        args[0] = strsep(&pruned_input, " ");
+        args[0] = strsep(&input, " ");
+        size_t cmd_length = strnlen(args[0], MAX_STRING_LENGTH);
 
-        if (strncmp(args[0], EXIT, EXIT_LENGTH) == 0)
+        if (strncmp(args[0], EXIT, cmd_length) == 0)
         {
             if (num_args != 1)
             {
@@ -60,7 +82,7 @@ void execute(FILE* input)
                 wish_exit();
             }
         }
-        else if (strncmp(args[0], CD, CD_LENGTH) == 0)
+        else if (strncmp(args[0], CD, cmd_length) == 0)
         {
             if (num_args != 2)
             {
@@ -68,78 +90,74 @@ void execute(FILE* input)
             }
             else
             {
-                cd(pruned_input);
+                cd(input);
             }
         }
-        else if (strncmp(args[0], PATH, PATH_LENGTH) == 0)
+        else if (strncmp(args[0], PATH, cmd_length) == 0)
         {
             free_node_list(path_list);
             path_list = NULL;
             if (num_args > 1)
             {
-                path(&path_list, pruned_input);
+                path(&path_list, input);
             }
         }
         else
         {
-            bool authorized = false;
-            node_t* tmp = path_list;
-            while (tmp != NULL)
+            for (size_t i = 1; i < num_args; i++)
             {
-                cmd = get_new_string(tmp->path_str, args[0]);
+                args[i] = strsep(&input, " ");
+            }
+
+            args[num_args] = NULL;
+            bool authorized = false;
+            node_t* tmp_list = path_list;
+            char* cmd;
+            while (tmp_list != NULL)
+            {
+                cmd = get_new_string(tmp_list->str, args[0]);
                 if (access(cmd, X_OK) == 0)
                 {
                     authorized = true;
                     break;
                 }
 
-                tmp = tmp->next;
+                tmp_list = tmp_list->next;
                 free(cmd);
             }
 
             if (authorized)
             {
-                int stderr_backup;
-                int stdout_backup;
-                if (redirect != NULL)
-                {
-                    stderr_backup = dup(STDERR_FILENO);
-                    stdout_backup = dup(STDOUT_FILENO);
-                    freopen(redirect, "w+", stdout);
-                    freopen(redirect, "w+", stderr);
-                }
-
-                int wstatus;
                 pid_t cpid = fork();
                 if (cpid == 0)
                 {
-                    for (size_t i = 1; i < num_args; i++)
+                    if (redirect_found)
                     {
-                        args[i] = strsep(&pruned_input, " ");
+                        bool valid_redirect = redirect != NULL && count_char(redirect, ' ') == 0 && count_char(redirect, '>') == 0;
+                        if (valid_redirect)
+                        {
+                            int fd = open(redirect, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
+                            close(STDOUT_FILENO);
+                            close(STDERR_FILENO);
+                            dup(fd);
+                            dup(fd);
+                            close(fd);
+                            execv(cmd, args);
+                        }
+                        else
+                        {
+                            print_error_message();
+                        }
                     }
-
-                    args[num_args] = NULL;
-                    execv(cmd, args);
+                    else
+                    {
+                        execv(cmd, args);
+                    }
                 }
                 else
                 {
-                    pid_t w = waitpid(cpid, &wstatus, WUNTRACED);
                     free(cmd);
-                    if (w == -1)
-                    {
-                        print_error_message();
-                    }
-
-                    if (redirect != NULL)
-                    {
-                        fflush(stderr);
-                        fflush(stdout);
-                        dup2(stderr_backup, STDERR_FILENO);
-                        dup2(stdout_backup, STDOUT_FILENO);
-                        close(stderr_backup);
-                        close(stdout_backup);
-                        free(redirect);
-                    }
+                    free(redirect);
                 }
             }
             else
@@ -148,17 +166,12 @@ void execute(FILE* input)
             }
         }
 
-        /*
-        The pruned_input variable is managed; however, we call strsep on it until it is reduced to a NULL pointer. Thus, it no longer needs
-        to be freed. We haven't cleaned up our managed resource though - that pointer now resides at the first position of our args[] array.
-        So we have to release that instead.
-        */
-        free(args[0]);
+        cmd_list = cmd_list->next;
     }
-    else
-    {
-        print_error_message();
-    }
+
+    while (wait(NULL) > 0);
+    free_node_list(cmd_list);
+    free(buf);
 }
 
 int main(int argc, char* argv[])

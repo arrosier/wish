@@ -7,10 +7,7 @@
 #define ERROR_MESSAGE           "An error has occurred\n"
 #define ERROR_MESSAGE_LENGTH    22
 #define EXIT                    "exit"
-#define EXIT_LENGTH             4
 #define CD                      "cd"
-#define CD_LENGTH               2
 #define PATH                    "path"
-#define PATH_LENGTH             4
 
 #endif
