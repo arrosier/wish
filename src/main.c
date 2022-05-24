@@ -16,18 +16,18 @@
 
 node_t* path_list;
 
-void execute(FILE* input)
+void execute(FILE* input_stream)
 {
     char* buf = NULL;
     size_t n = 0;
     node_t* cmd_list = NULL;
-    getline(&buf, &n, input);
+    getline(&buf, &n, input_stream);
     char* pruned_input = prune(buf);
     free(buf);
     /*
     The result of the prune function call is a managed resource. By using strsep on pruned_input below we'll be changing
-    where our variable points so we need to remember the original address to free it later. The cmd variable won't always
-    point to the address returned by prune either, so we'll reuse buf to accomplish it.
+    where our variable points so we need to remember the original address to free it later. We'll just reuse the buf
+    variable to do so.
     */
     buf = pruned_input;
     char* ptr;
@@ -36,7 +36,7 @@ void execute(FILE* input)
         char* tmp_str = prune(ptr);
         if (tmp_str == NULL)
         {
-            free(tmp_str);
+            // We didn't get any input on one side of our & operator. Don't schedule a command.
             continue;
         }
         node_t* tmp = create_node(tmp_str);
@@ -55,10 +55,7 @@ void execute(FILE* input)
             *redirect = '\0';
             redirect++;
             redirect = prune(redirect);
-            char* tmp = input;
-            input = prune(tmp);
-            free(tmp);
-            if (input == NULL)
+            if (input[0] == '\0' || redirect == NULL || count_char(redirect, ' ') != 0 || count_char(redirect, '>') != 0)
             {
                 print_error_message();
                 cmd_list = cmd_list->next;
@@ -131,29 +128,17 @@ void execute(FILE* input)
                 pid_t cpid = fork();
                 if (cpid == 0)
                 {
-                    if (redirect_found)
+                    if (redirect != NULL)
                     {
-                        bool valid_redirect = redirect != NULL && count_char(redirect, ' ') == 0 && count_char(redirect, '>') == 0;
-                        if (valid_redirect)
-                        {
-                            int fd = open(redirect, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
-                            close(STDOUT_FILENO);
-                            close(STDERR_FILENO);
-                            dup(fd);
-                            dup(fd);
-                            close(fd);
-                            execv(cmd, args);
-                        }
-                        else
-                        {
-                            print_error_message();
-                            exit(1);
-                        }
+                        int fd = open(redirect, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
+                        close(STDOUT_FILENO);
+                        close(STDERR_FILENO);
+                        dup(fd);
+                        dup(fd);
+                        close(fd);
                     }
-                    else
-                    {
-                        execv(cmd, args);
-                    }
+
+                    execv(cmd, args);
                 }
                 else
                 {
@@ -166,7 +151,7 @@ void execute(FILE* input)
                 print_error_message();
             }
         }
-
+        
         cmd_list = cmd_list->next;
     }
 
