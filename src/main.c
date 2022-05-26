@@ -48,8 +48,7 @@ void execute(FILE* input_stream)
     {
         char* input = cmd_list->str;
         char* redirect = index(input, '>');
-        bool redirect_found = redirect != NULL;
-        if (redirect_found)
+        if (redirect != NULL)
         {
             *redirect = '\0';
             redirect++;
@@ -66,7 +65,6 @@ void execute(FILE* input_stream)
         char* args[num_args + 1];
         args[0] = strsep(&input, " ");
         size_t cmd_length = strnlen(args[0], MAX_STRING_LENGTH);
-
         if (strncmp(args[0], EXIT, cmd_length) == 0)
         {
             if (num_args != 1)
