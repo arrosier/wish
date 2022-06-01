@@ -27,9 +27,9 @@ void* common_malloc(const size_t size)
     }
 }
 
-void* common_realloc(void** ptr, const size_t size)
+void* common_realloc(void* ptr, const size_t size)
 {
-    void* result = realloc(*ptr, size);
+    void* result = realloc(ptr, size);
 
     if (result == NULL)
     {

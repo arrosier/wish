@@ -41,7 +41,7 @@ char* prune(char* str)
         counter--;
     }
 
-    result = common_realloc((void*)&result, (counter + 1) * sizeof(char));
+    result = common_realloc((void*)result, (counter + 1) * sizeof(char));
     result[counter] = '\0';
     
     return result;
