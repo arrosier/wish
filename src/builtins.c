@@ -8,7 +8,6 @@
 #include "stringutils.h"
 #include "typedefs.h"
 
-#include <stdio.h>
 
 void wish_exit()
 {
