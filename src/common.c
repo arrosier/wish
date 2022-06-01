@@ -27,9 +27,9 @@ void* common_malloc(const size_t size)
     }
 }
 
-void* common_realloc(void* ptr, const size_t size)
+void* common_realloc(void** ptr, const size_t size)
 {
-    void* result = realloc(ptr, size);
+    void* result = realloc(*ptr, size);
 
     if (result == NULL)
     {
@@ -46,7 +46,7 @@ node_t* create_node(char* str)
 {
     node_t* new_node = common_malloc(sizeof(node_t));
     size_t length = strnlen(str, MAX_STRING_LENGTH) + 1;
-    new_node->str = common_malloc(length);
+    new_node->str = common_malloc(length * sizeof(char));
     new_node->next = NULL;
     memcpy(new_node->str, str, length);
 

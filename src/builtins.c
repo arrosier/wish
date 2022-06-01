@@ -30,15 +30,15 @@ void path(node_t** path_list, char* new)
     for (size_t i = 0; i < num_args; i++)
     {
         arg = strsep(&new, " ");
-        tmp = create_node(arg);
-        size_t length = strnlen(tmp->str, MAX_STRING_LENGTH);
-        if (tmp->str[length - 2] != '/')
+        size_t length = strnlen(arg, MAX_STRING_LENGTH);
+        if (arg[length - 2] != '/')
         {
-            length++;
-            common_realloc(tmp->str, length);
-            strncat(tmp->str, "/", 2);
+            arg = get_new_string(arg, "/");
         }
+        
+        tmp = create_node(arg);
         tmp->next = *path_list;
         *path_list = tmp;
+        free(arg);
     }
 }

@@ -73,6 +73,10 @@ void execute(FILE* input_stream)
             }
             else
             {
+                // Not strictly necessary but good practice...and it makes valgrind happy
+                free_node_list(cmd_list);
+                free_node_list(path_list);
+                free(buf);
                 wish_exit();
             }
         }
@@ -149,11 +153,13 @@ void execute(FILE* input_stream)
             }
         }
         
+        node_t* tmp_node = cmd_list; 
         cmd_list = cmd_list->next;
+        free(tmp_node->str);
+        free(tmp_node);
     }
 
     while (wait(NULL) > 0);
-    free_node_list(cmd_list);
     free(buf);
 }
 

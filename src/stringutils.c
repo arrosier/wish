@@ -14,7 +14,7 @@ char* prune(char* str)
     }
 
     size_t counter = 0;
-    char* result = common_malloc(MAX_STRING_LENGTH + 1);
+    char* result = common_malloc((MAX_STRING_LENGTH + 1) * sizeof(char));
     for (size_t i = 0; i < length; i++)
     {
         if (str[i] != ' ' && str[i] != '\t' && str[i] != '\n')
@@ -41,7 +41,7 @@ char* prune(char* str)
         counter--;
     }
 
-    common_realloc(result, counter + 1);
+    result = common_realloc((void*)&result, (counter + 1) * sizeof(char));
     result[counter] = '\0';
     
     return result;
@@ -51,7 +51,7 @@ char* get_new_string(const char* s1, const char* s2)
 {
     const size_t s1_length = strnlen(s1, MAX_STRING_LENGTH);
     const size_t s2_length = strnlen(s2, MAX_STRING_LENGTH);
-    char* result = common_malloc(s1_length + s2_length + 1);
+    char* result = common_malloc((s1_length + s2_length + 1) * sizeof(char));
 
     memcpy(result, s1, s1_length);
     memcpy(result + s1_length, s2, s2_length + 1);
