@@ -8,6 +8,7 @@
 #include "stringutils.h"
 #include "typedefs.h"
 
+#include <stdio.h>
 
 void wish_exit()
 {
@@ -31,14 +32,19 @@ void path(node_t** path_list, char* new)
     {
         arg = strsep(&new, " ");
         size_t length = strnlen(arg, MAX_STRING_LENGTH);
-        if (arg[length - 2] != '/')
+        if (arg[length - 1] != '/')
         {
-            arg = get_new_string(arg, "/");
+            char* str_tmp = get_new_string(arg, "/");
+            tmp = create_node(str_tmp);
+            tmp->next = *path_list;
+            *path_list = tmp;
+            free(str_tmp);
         }
-        
-        tmp = create_node(arg);
-        tmp->next = *path_list;
-        *path_list = tmp;
-        free(arg);
+        else
+        {
+            tmp = create_node(arg);
+            tmp->next = *path_list;
+            *path_list = tmp;
+        }
     }
 }
