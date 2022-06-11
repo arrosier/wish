@@ -46,14 +46,13 @@ void execute(FILE* input_stream)
 
     while (cmd_list != NULL)
     {
-        char* input = cmd_list->str;
-        char* redirect = index(input, '>');
+        char* redirect = index(cmd_list->str, '>');
         if (redirect != NULL)
         {
             *redirect = '\0';
             redirect++;
             redirect = prune(redirect);
-            if (input[0] == '\0' || redirect == NULL || count_char(redirect, ' ') != 0 || count_char(redirect, '>') != 0)
+            if (cmd_list->str[0] == '\0' || redirect == NULL || count_char(redirect, ' ') != 0 || count_char(redirect, '>') != 0)
             {
                 print_error_message();
                 cmd_list = cmd_list->next;
@@ -61,6 +60,9 @@ void execute(FILE* input_stream)
             }
         }
 
+        char* input = prune(cmd_list->str);
+        // We need a temp variable to free memory later since we call strsep on input below
+        char* input_ptr = input;
         size_t num_args = count_char(input, ' ') + 1;
         char* args[num_args + 1];
         args[0] = strsep(&input, " ");
@@ -76,6 +78,7 @@ void execute(FILE* input_stream)
                 // Not strictly necessary but good practice...and it makes valgrind happy
                 free_node_list(cmd_list);
                 free_node_list(path_list);
+                free(input_ptr);
                 free(buf);
                 wish_exit();
             }
@@ -157,6 +160,7 @@ void execute(FILE* input_stream)
         cmd_list = cmd_list->next;
         free(tmp_node->str);
         free(tmp_node);
+        free(input_ptr);
     }
 
     while (wait(NULL) > 0);
