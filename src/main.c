@@ -13,6 +13,7 @@
 #include "typedefs.h"
 
 
+char* cwd;
 node_t* path_list;
 
 void execute(FILE* input_stream)
@@ -80,6 +81,7 @@ void execute(FILE* input_stream)
                 free_node_list(path_list);
                 free(input_ptr);
                 free(buf);
+                free(cwd);
                 wish_exit();
             }
         }
@@ -162,7 +164,7 @@ void execute(FILE* input_stream)
         free(tmp_node);
         free(input_ptr);
     }
-
+    
     while (wait(NULL) > 0);
     free(buf);
 }
@@ -197,8 +199,11 @@ int main(int argc, char* argv[])
     {
         while (1)
         {
-            printf("wish> ");
+            cwd = getcwd(NULL, 0);
+            // printf("wish> ");
+            printf("%s> ", cwd);
             execute(stdin);
+            free(cwd);
         }
     }
 

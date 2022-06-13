@@ -4,7 +4,7 @@ The shell is rather limited but should perform the basic functionality one would
 
 -`exit`: The `exit` command takes no arguments and simply stops the process, returning with a code of 0.
 
--`cd`: The `cd` command takes one (and only one) argument and changes the current working directory of the calling process to the directory specified by the argument. Do note that this being a very basic shell the prompt currently does *not* reflect the current directory.
+-`cd`: The `cd` command takes one (and only one) argument and changes the current working directory of the calling process to the directory specified by the argument.
 
 -`path`: The `path` command accepts any number of arguments (even 0) and updates the shell's internal list of paths to search for the given command. By default the path is set to `/bin`. As an example, without first updating the path list the command `ls` would attempt to execute the program located at `/bin/ls`. Since that is the only path if the executable did not exist at that location the shell would simply print an error message. By contrast, if one first entered the command `path /bin /usr/bin` and then entered `ls` the shell would walk through the path lists until it found an appropriate executable or print an error if none was found. Be aware that entering `path` with no arguments is a valid input and would leave you unable to execute any commands until the `path` command was given again with appropriate arguments!
 
